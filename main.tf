@@ -14,7 +14,7 @@ provider "aws" {
   }
 }
 
-# Create Bucket
+# Create S3 Bucket
 resource "aws_s3_bucket" "b" {
   bucket = "onexlab-bucket-terraform"
   acl    = "public-read"
@@ -23,7 +23,7 @@ resource "aws_s3_bucket" "b" {
   }
 }
 
-# Upload an object
+# Upload an object to S3 Bucket
 resource "aws_s3_bucket_object" "object" {
   bucket = aws_s3_bucket.b.id
   key    = "test.txt"
