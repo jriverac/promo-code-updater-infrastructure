@@ -9,6 +9,8 @@ provider "aws" {
   s3_force_path_style         = true
   endpoints {
     s3 = "http://localhost:4566"
+    sqs = "http://localhost:4566"
+    sns = "http://localhost:4566"
   }
 }
 
@@ -35,6 +37,31 @@ resource "aws_sqs_queue" "terraform_queue" {
   tags = {
     Environment = "test"
   }
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.terraform_queue_deadletter.arn
+    maxReceiveCount = 4
+  })
 }
 
 # Create Dead Letter Queue
+resource "aws_sqs_queue" "terraform_queue_deadletter" {
+  name                      = "terraform-example-dead-letter-queue"
+  tags = {
+    Environment = "test"
+  }
+}
+
+# Create First Topic
+resource "aws_sns_topic" "first_topic" {
+  name = "terraform-example-topic-first"
+  tags = {
+    Environment = "test"
+  }
+}
+
+# Create First Topic Subscription
+resource "aws_sns_topic_subscription" "first_topic_subscription" {
+  topic_arn = aws_sns_topic.first_topic.arn
+  protocol  = "sqs"
+  endpoint  = aws_sqs_queue.terraform_queue.arn
+}
