@@ -11,6 +11,8 @@ provider "aws" {
     s3 = "http://localhost:4566"
     sqs = "http://localhost:4566"
     sns = "http://localhost:4566"
+    iam = "http://localhost:4566"
+    lambda = "http://localhost:4566"
   }
 }
 
@@ -64,4 +66,39 @@ resource "aws_sns_topic_subscription" "first_topic_subscription" {
   topic_arn = aws_sns_topic.first_topic.arn
   protocol  = "sqs"
   endpoint  = aws_sqs_queue.terraform_queue.arn
+}
+
+# Create Role for Function
+resource "aws_iam_role" "lambda_basic_execution" {
+  name = "terraform-example-lambda-basic-execution"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+}
+
+# Create Function
+resource "aws_lambda_function" "lambda_function" {
+  filename      = "index.js.zip"
+  function_name = "terraform-example-lambda-function"
+  role          = aws_iam_role.lambda_basic_execution.arn
+  handler       = "index.apiHandler"
+  runtime       = "nodejs12.x"
+  memory_size   = 128
+  timeout       = 10
+  publish       = true
+  tags = {
+    Environment = "test"
+  }
 }
