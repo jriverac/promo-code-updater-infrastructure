@@ -13,6 +13,7 @@ provider "aws" {
     sns = "http://localhost:4566"
     iam = "http://localhost:4566"
     lambda = "http://localhost:4566"
+    apigateway = "http://localhost:4566"
   }
 }
 
@@ -102,3 +103,56 @@ resource "aws_lambda_function" "lambda_function" {
     Environment = "test"
   }
 }
+
+# Create API Gateway
+resource "aws_api_gateway_rest_api" "rest_api" {
+  name = "terraform-example-api"
+  description = "A Terraform Acceptance Test"
+  tags = {
+    Environment = "test"
+  }
+}
+
+# Create Resource
+resource "aws_api_gateway_resource" "rest_api_root" {
+  rest_api_id = aws_api_gateway_rest_api.rest_api.id
+  parent_id   = aws_api_gateway_rest_api.rest_api.root_resource_id
+  path_part   = "test"
+}
+
+# Create Get Method
+resource "aws_api_gateway_method" "rest_api_get_method" {
+  rest_api_id = aws_api_gateway_rest_api.rest_api.id
+  resource_id = aws_api_gateway_resource.rest_api_root.id
+  http_method = "GET"
+  authorization = "NONE"
+}
+
+# Create Get Method Integration
+resource "aws_api_gateway_integration" "rest_api_get_method_integration" {
+  rest_api_id = aws_api_gateway_rest_api.rest_api.id
+  resource_id = aws_api_gateway_resource.rest_api_root.id
+  http_method = aws_api_gateway_method.rest_api_get_method.http_method
+  type        = "AWS_PROXY"
+  integration_http_method = "GET"
+  uri = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:terraform-example-lambda-function/invocations"
+}
+
+# Create deployment
+resource "aws_api_gateway_deployment" "rest_api_deployment" {
+  depends_on = [
+    aws_api_gateway_integration.rest_api_get_method_integration
+  ]
+  rest_api_id = aws_api_gateway_rest_api.rest_api.id
+  stage_name  = "test"
+}
+
+# Add Permission
+resource "aws_lambda_permission" "lambda_invocation_permission" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda_function.arn
+  principal     = "apigateway.amazonaws.com"
+  statement_id  = "terraform-example-api-gateway-invoke-permission"
+  source_arn    = aws_api_gateway_deployment.rest_api_deployment.execution_arn
+}
+

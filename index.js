@@ -4,14 +4,15 @@
 //   console.log(Date.now());
 // }
 
-'use strict'
+'use strict';
 
 const apiHandler = (payload, context, callback) => {
     console.log(`Function apiHandler called with payload ${JSON.stringify(payload)}`);
     callback(null, {
         statusCode: 201,
         body: JSON.stringify({
-            message: 'Hello World'
+            message: 'Hello World',
+            input: 'This is the rest of the message.'
         }),
         headers: {
             'X-Custom-Header': 'ASDF'
