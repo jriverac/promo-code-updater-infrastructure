@@ -104,6 +104,8 @@ resource "aws_lambda_function" "lambda_function" {
   }
 }
 
+
+
 # Create API Gateway
 resource "aws_api_gateway_rest_api" "rest_api" {
   name = "terraform-example-api"
@@ -156,3 +158,27 @@ resource "aws_lambda_permission" "lambda_invocation_permission" {
   source_arn    = aws_api_gateway_deployment.rest_api_deployment.execution_arn
 }
 
+# Create Lambda function for S3 Event
+resource "aws_lambda_function" "s3_lambda_function" {
+  filename = "s3.js.zip"
+  function_name = "aws_s3_example_lambda_function"
+  role = aws_iam_role.lambda_basic_execution.arn
+  handler = "s3.s3JsonLoggerHandler"
+  runtime = "nodejs12.x"
+  memory_size = 128
+  timeout = 10
+  publish = true
+  tags = {
+    Environment = "test"
+  }
+}
+
+# Create S3 Event
+resource "aws_s3_bucket_notification" "bucket_notification" {
+  bucket = aws_s3_bucket.b.id
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.s3_lambda_function.arn
+    events = ["s3:ObjectCreated:*"]
+    filter_suffix = ".log"
+  }
+}
