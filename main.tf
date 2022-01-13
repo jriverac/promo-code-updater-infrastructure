@@ -19,7 +19,7 @@ provider "aws" {
 
 # Create S3 Bucket
 resource "aws_s3_bucket" "b" {
-  bucket = "onexlab-bucket-terraform"
+  bucket = "source-bucket-terraform"
   acl    = "public-read"
   tags = {
     Environment = "test"
@@ -32,6 +32,15 @@ resource "aws_s3_bucket_object" "object" {
   key    = "test.txt"
   acl    = "public-read"
   source = "test.txt"
+}
+
+# Create S3 Processed Bucket
+resource "aws_s3_bucket" "c" {
+  bucket = "processed-bucket-terraform"
+  acl    = "public-read"
+  tags = {
+    Environment = "test"
+  }
 }
 
 # Create Main Queue
